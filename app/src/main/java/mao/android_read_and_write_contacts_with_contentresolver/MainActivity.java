@@ -7,19 +7,37 @@ import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.OperationApplicationException;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.RemoteException;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 import mao.android_read_and_write_contacts_with_contentresolver.entity.Contact;
+
+
+/**
+ * Class(类名): MainActivity
+ * Author(作者）: mao
+ * Author QQ：1296193245
+ * GitHub：https://github.com/maomao124/
+ * Date(创建日期)： 2022/10/1
+ * Time(创建时间)： 14:38
+ * Version(版本): 1.0
+ * Description(描述)： 无
+ */
 
 public class MainActivity extends AppCompatActivity
 {
@@ -77,13 +95,100 @@ public class MainActivity extends AppCompatActivity
             String phone = editText2.getText().toString();
             String email = editText3.getText().toString();
 
+            if (name.equals(""))
+            {
+                toastShow("请输入联系人姓名");
+                return;
+            }
+            if (phone.equals(""))
+            {
+                toastShow("请输入联系人手机号码");
+                return;
+            }
+            //电子邮箱可以为空
+            /*
+            if (email.equals(""))
+            {
+                toastShow("请输入联系人电子邮箱");
+                return;
+            }*/
+
             Contact contact = new Contact(name, phone, email);
-            addContacts(getContentResolver(), contact);
+            //addContacts(getContentResolver(), contact);
+            addFullContacts(getContentResolver(), contact);
+            toastShow("已尝试插入");
         }
         catch (Exception e)
         {
             Log.e(TAG, "insert: ", e);
             toastShow("异常：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 往手机通讯录一次性添加一个联系人信息（包括主记录、姓名、电话号码、电子邮箱）
+     * 有事务，推荐。要么全部成功，要么全部失败
+     *
+     * @param resolver 解析器
+     * @param contact  联系
+     */
+    private void addFullContacts(ContentResolver resolver, Contact contact)
+    {
+        //创建一个插入联系人主记录的内容操作器
+        ContentProviderOperation op_main = ContentProviderOperation
+                .newInsert(ContactsContract.RawContacts.CONTENT_URI)
+                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+                .build();
+
+        // 创建一个插入联系人姓名记录的内容操作器
+        ContentProviderOperation op_name = ContentProviderOperation
+                .newInsert(ContactsContract.Data.CONTENT_URI)
+                // 将第0个操作的id，即 raw_contacts 的 id 作为 data 表中的 raw_contact_id
+                .withValueBackReference(ContactsContract.Contacts.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Contacts.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Contacts.Data.DATA2, contact.getName())
+                .build();
+
+        // 创建一个插入联系人电话号码记录的内容操作器
+        ContentProviderOperation op_phone = ContentProviderOperation
+                .newInsert(ContactsContract.Data.CONTENT_URI)
+                // 将第0个操作的id，即 raw_contacts 的 id 作为 data 表中的 raw_contact_id
+                .withValueBackReference(ContactsContract.Contacts.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Contacts.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Contacts.Data.DATA1, contact.getPhone())
+                .withValue(ContactsContract.Contacts.Data.DATA2,
+                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                .build();
+
+        // 创建一个插入联系人电子邮箱记录的内容操作器
+        ContentProviderOperation op_email = ContentProviderOperation
+                .newInsert(ContactsContract.Data.CONTENT_URI)
+                // 将第0个操作的id，即 raw_contacts 的 id 作为 data 表中的 raw_contact_id
+                .withValueBackReference(ContactsContract.Contacts.Data.RAW_CONTACT_ID, 0)
+                .withValue(ContactsContract.Contacts.Data.MIMETYPE,
+                        ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.Contacts.Data.DATA1, contact.getEmail())
+                .withValue(ContactsContract.Contacts.Data.DATA2,
+                        ContactsContract.CommonDataKinds.Email.TYPE_WORK)
+                .build();
+
+        // 声明一个内容操作器的列表，并将上面四个操作器添加到该列表中
+        ArrayList<ContentProviderOperation> operations = new ArrayList<>();
+        operations.add(op_main);
+        operations.add(op_name);
+        operations.add(op_phone);
+        operations.add(op_email);
+
+        try
+        {
+            // 批量提交四个操作
+            resolver.applyBatch(ContactsContract.AUTHORITY, operations);
+        }
+        catch (OperationApplicationException | RemoteException e)
+        {
+            Log.e(TAG, "addFullContacts: ", e);
         }
     }
 
