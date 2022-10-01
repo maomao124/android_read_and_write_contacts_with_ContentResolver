@@ -6,6 +6,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
@@ -13,6 +14,7 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.OperationApplicationException;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -66,6 +68,58 @@ public class MainActivity extends AppCompatActivity
                 insert(R.id.Button1);
             }
         });
+    }
+
+    @SuppressLint("Range")
+    private void readPhoneContacts(ContentResolver resolver)
+    {
+        // 先查询 raw_contacts 表，在根据 raw_contacts_id 去查询 data 表
+        Cursor cursor = resolver.query(ContactsContract.RawContacts.CONTENT_URI,
+                new String[]{ContactsContract.RawContacts._ID},
+                null, null, null, null);
+        while (cursor.moveToNext())
+        {
+            int rawContactId = cursor.getInt(0);
+            Uri uri = Uri.parse("content://com.android.contacts/contacts/" + rawContactId + "/data");
+            Cursor dataCursor = resolver.query(uri,
+                    new String[]{ContactsContract.Contacts.Data.MIMETYPE,
+                            ContactsContract.Contacts.Data.DATA1,
+                            ContactsContract.Contacts.Data.DATA2},
+                    null, null, null);
+            Contact contact = new Contact();
+            while (dataCursor.moveToNext())
+            {
+                String data1 = dataCursor.getString(dataCursor.getColumnIndex(ContactsContract.Contacts.Data.DATA1));
+                String mimeType = dataCursor.getString(dataCursor.getColumnIndex(ContactsContract.Contacts.Data.MIMETYPE));
+                switch (mimeType)
+                {
+                    //是姓名
+                    case ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE:
+                        contact.setName(data1);
+                        break;
+
+                    //邮箱
+                    case ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE:
+                        contact.setEmail(data1);
+                        break;
+
+                    //手机
+                    case ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE:
+                        contact.setPhone(data1);
+                        break;
+                }
+            }
+
+            dataCursor.close();
+
+            // RawContacts 表中出现的 _id，不一定在 Data 表中都会有对应记录
+            if (contact.getName() != null)
+            {
+                Log.d(TAG, "readPhoneContacts: \n" + contact + "\n");
+            }
+        }
+        cursor.close();
+
     }
 
 
