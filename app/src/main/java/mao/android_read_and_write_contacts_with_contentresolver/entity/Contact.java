@@ -122,7 +122,7 @@ public class Contact
         final StringBuilder stringbuilder = new StringBuilder();
         stringbuilder.append("name：").append(name).append('\n');
         stringbuilder.append("phone：").append(phone).append('\n');
-        stringbuilder.append("email：").append(email).append('\n');
+        stringbuilder.append("email：").append(email).append("\n\n");
         return stringbuilder.toString();
     }
 }

@@ -23,9 +23,11 @@ import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import mao.android_read_and_write_contacts_with_contentresolver.entity.Contact;
 
@@ -47,8 +49,13 @@ public class MainActivity extends AppCompatActivity
     private EditText editText1;
     private EditText editText2;
     private EditText editText3;
+    private TextView result;
 
+    /**
+     * 标签
+     */
     private static final String TAG = "MainActivity";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -59,6 +66,7 @@ public class MainActivity extends AppCompatActivity
         editText1 = findViewById(R.id.EditText1);
         editText2 = findViewById(R.id.EditText2);
         editText3 = findViewById(R.id.EditText3);
+        result = findViewById(R.id.result);
 
         findViewById(R.id.Button1).setOnClickListener(new View.OnClickListener()
         {
@@ -68,11 +76,54 @@ public class MainActivity extends AppCompatActivity
                 insert(R.id.Button1);
             }
         });
+        findViewById(R.id.Button2).setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v)
+            {
+                queryAll(R.id.Button2);
+            }
+        });
     }
 
-    @SuppressLint("Range")
-    private void readPhoneContacts(ContentResolver resolver)
+
+    /**
+     * 查询所有
+     *
+     * @param requestCode 请求代码
+     */
+    private void queryAll(int requestCode)
     {
+        if (checkPermission(MainActivity.this, Manifest.permission.READ_CONTACTS,
+                requestCode % 65536))
+        {
+            //成功获取到权限
+            queryAll();
+        }
+    }
+
+    /**
+     * 查询所有
+     */
+    private void queryAll()
+    {
+        List<Contact> list = readPhoneContacts(getContentResolver());
+        StringBuilder stringBuilder = new StringBuilder();
+        list.forEach(stringBuilder::append);
+        result.setText(stringBuilder.toString());
+    }
+
+
+    /**
+     * 读取手机联系人
+     *
+     * @param resolver 解析器
+     * @return {@link List}<{@link Contact}>
+     */
+    @SuppressLint("Range")
+    private List<Contact> readPhoneContacts(ContentResolver resolver)
+    {
+        List<Contact> list = new ArrayList<>();
         // 先查询 raw_contacts 表，在根据 raw_contacts_id 去查询 data 表
         Cursor cursor = resolver.query(ContactsContract.RawContacts.CONTENT_URI,
                 new String[]{ContactsContract.RawContacts._ID},
@@ -116,10 +167,11 @@ public class MainActivity extends AppCompatActivity
             if (contact.getName() != null)
             {
                 Log.d(TAG, "readPhoneContacts: \n" + contact + "\n");
+                list.add(contact);
             }
         }
         cursor.close();
-
+        return list;
     }
 
 
@@ -316,6 +368,18 @@ public class MainActivity extends AppCompatActivity
             else
             {
                 toastShow("没有写联系人的权限");
+            }
+        }
+        else if (requestCode == R.id.Button2 % 65536)
+        {
+            if (checkGrant(grantResults))
+            {
+                //用户选择了同意授权
+                queryAll();
+            }
+            else
+            {
+                toastShow("没有读联系人的权限");
             }
         }
     }
