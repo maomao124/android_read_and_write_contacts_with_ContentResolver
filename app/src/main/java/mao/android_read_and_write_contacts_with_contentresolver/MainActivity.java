@@ -114,6 +114,64 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+
+    /**
+     * 往通讯录里插入数据
+     *
+     * @param requestCode 请求代码
+     */
+    public void insert(int requestCode)
+    {
+        if (checkPermission(MainActivity.this, Manifest.permission.WRITE_CONTACTS,
+                requestCode % 65536))
+        {
+            //成功获取到权限
+            insert();
+        }
+    }
+
+    /**
+     * 插入联系人
+     */
+    private void insert()
+    {
+        try
+        {
+            String name = editText1.getText().toString();
+            String phone = editText2.getText().toString();
+            String email = editText3.getText().toString();
+
+            if (name.equals(""))
+            {
+                toastShow("请输入联系人姓名");
+                return;
+            }
+            if (phone.equals(""))
+            {
+                toastShow("请输入联系人手机号码");
+                return;
+            }
+            //电子邮箱可以为空
+            /*
+            if (email.equals(""))
+            {
+                toastShow("请输入联系人电子邮箱");
+                return;
+            }*/
+
+            Contact contact = new Contact(name, phone, email);
+            //addContacts(getContentResolver(), contact);
+            addFullContacts(getContentResolver(), contact);
+            toastShow("已尝试插入");
+        }
+        catch (Exception e)
+        {
+            Log.e(TAG, "insert: ", e);
+            toastShow("异常：" + e.getMessage());
+        }
+    }
+
+
     /**
      * 读取手机联系人
      *
@@ -174,62 +232,6 @@ public class MainActivity extends AppCompatActivity
         return list;
     }
 
-
-    /**
-     * 往通讯录里插入数据
-     *
-     * @param requestCode 请求代码
-     */
-    public void insert(int requestCode)
-    {
-        if (checkPermission(MainActivity.this, Manifest.permission.WRITE_CONTACTS,
-                requestCode % 65536))
-        {
-            //成功获取到权限
-            insert();
-        }
-    }
-
-    /**
-     * 插入联系人
-     */
-    private void insert()
-    {
-        try
-        {
-            String name = editText1.getText().toString();
-            String phone = editText2.getText().toString();
-            String email = editText3.getText().toString();
-
-            if (name.equals(""))
-            {
-                toastShow("请输入联系人姓名");
-                return;
-            }
-            if (phone.equals(""))
-            {
-                toastShow("请输入联系人手机号码");
-                return;
-            }
-            //电子邮箱可以为空
-            /*
-            if (email.equals(""))
-            {
-                toastShow("请输入联系人电子邮箱");
-                return;
-            }*/
-
-            Contact contact = new Contact(name, phone, email);
-            //addContacts(getContentResolver(), contact);
-            addFullContacts(getContentResolver(), contact);
-            toastShow("已尝试插入");
-        }
-        catch (Exception e)
-        {
-            Log.e(TAG, "insert: ", e);
-            toastShow("异常：" + e.getMessage());
-        }
-    }
 
     /**
      * 往手机通讯录一次性添加一个联系人信息（包括主记录、姓名、电话号码、电子邮箱）
