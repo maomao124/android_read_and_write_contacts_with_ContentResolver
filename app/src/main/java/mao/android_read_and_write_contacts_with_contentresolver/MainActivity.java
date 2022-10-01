@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -26,6 +27,8 @@ public class MainActivity extends AppCompatActivity
     private EditText editText1;
     private EditText editText2;
     private EditText editText3;
+
+    private static final String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -48,7 +51,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     /**
      * 往通讯录里插入数据
      *
@@ -60,11 +62,30 @@ public class MainActivity extends AppCompatActivity
                 requestCode % 65536))
         {
             //成功获取到权限
-
+            insert();
         }
     }
 
+    /**
+     * 插入联系人
+     */
+    private void insert()
+    {
+        try
+        {
+            String name = editText1.getText().toString();
+            String phone = editText2.getText().toString();
+            String email = editText3.getText().toString();
 
+            Contact contact = new Contact(name, phone, email);
+            addContacts(getContentResolver(), contact);
+        }
+        catch (Exception e)
+        {
+            Log.e(TAG, "insert: ", e);
+            toastShow("异常：" + e.getMessage());
+        }
+    }
 
 
     /**
@@ -120,7 +141,6 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
     {
@@ -132,7 +152,7 @@ public class MainActivity extends AppCompatActivity
             if (checkGrant(grantResults))
             {
                 //用户选择了同意授权
-                //todo:
+                insert();
             }
             else
             {
